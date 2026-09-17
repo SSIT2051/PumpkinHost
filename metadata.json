@@ -1,0 +1,6 @@
+{
+  "name": "PumpkinMC Host",
+  "description": "Seamless PumpkinMC game server management on mobile with multi-server hosting, resource tuning, playit.gg and LAN networking, file manager, live console streaming, and plugin market.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

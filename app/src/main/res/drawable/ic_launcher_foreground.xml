@@ -1,0 +1,44 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Pumpkin stem -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M52,24h5c0,0 2,-6 5,-8c-4,0 -7,4 -10,8z" />
+    
+    <!-- Pumpkin main server block -->
+    <path
+        android:fillColor="#FF7A00"
+        android:pathData="M30,32h48c4.4,0 8,3.6 8,8v38c0,4.4 -3.6,8 -8,8H30c-4.4,0 -8,-3.6 -8,-8V40c0,-4.4 3.6,-8 8,-8z" />
+    
+    <!-- Inner darker ribs for Pumpkin character -->
+    <path
+        android:fillColor="#E65100"
+        android:pathData="M44,32h5v54h-5z M59,32h5v54h-5z" />
+
+    <!-- Carved Jack-o'-lantern glowing eyes (triangles) -->
+    <path
+        android:fillColor="#151311"
+        android:pathData="M37,45l8,8h-8z M63,53l8,-8v8z" />
+
+    <!-- Carved glowing mouth with server rack teeth/lines -->
+    <path
+        android:fillColor="#151311"
+        android:pathData="M37,66l6,4l5,-3l6,3l6,-3l5,3l-4,5h-20z" />
+
+    <!-- High-tech server rack status LEDs -->
+    <path
+        android:fillColor="#00E676"
+        android:pathData="M26,38h3v3h-3z" />
+    <path
+        android:fillColor="#00E676"
+        android:pathData="M26,44h3v3h-3z" />
+    <path
+        android:fillColor="#2979FF"
+        android:pathData="M79,38h3v3h-3z" />
+    <path
+        android:fillColor="#FFD600"
+        android:pathData="M79,44h3v3h-3z" />
+</vector>
