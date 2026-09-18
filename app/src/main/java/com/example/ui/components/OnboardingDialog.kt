@@ -62,7 +62,8 @@ data class OnboardingSlide(
     val badge: String,
     val icon: ImageVector,
     val description: String,
-    val highlights: List<String>
+    val highlights: List<String>,
+    val isWelcomeSlide: Boolean = false
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -71,6 +72,19 @@ fun OnboardingDialog(
     onDismiss: () -> Unit
 ) {
     val slides = listOf(
+        OnboardingSlide(
+            title = "PumpkinMC Host",
+            subtitle = "Made by SSIT • Alpha Preview",
+            badge = "WELCOME",
+            icon = Icons.Default.Bolt,
+            description = "Welcome to PumpkinMC Host! The world's first native ARM64 Minecraft Java server manager for Android. Host 20 TPS multiplayer worlds directly from your pocket with zero port forwarding.",
+            highlights = listOf(
+                "Engineered & Developed by SSIT",
+                "Powered by open-source PumpkinMC (Rust)",
+                "Currently in Early Alpha — continuous updates"
+            ),
+            isWelcomeSlide = true
+        ),
         OnboardingSlide(
             title = "Powered by PumpkinMC",
             subtitle = "Native Rust Minecraft Engine",
@@ -184,15 +198,36 @@ fun OnboardingDialog(
                             .padding(horizontal = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(ObsidianSurfaceElevated)
-                                .border(1.dp, PumpkinOrange.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(slide.icon, contentDescription = null, tint = PumpkinOrange, modifier = Modifier.size(34.dp))
+                        if (slide.isWelcomeSlide) {
+                            Box(
+                                modifier = Modifier
+                                    .size(76.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(PumpkinOrange.copy(alpha = 0.18f))
+                                    .border(1.5.dp, PumpkinOrange, RoundedCornerShape(20.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("🎃", fontSize = 42.sp)
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Made by SSIT",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextMuted,
+                                letterSpacing = 1.sp
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(ObsidianSurfaceElevated)
+                                    .border(1.dp, PumpkinOrange.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(slide.icon, contentDescription = null, tint = PumpkinOrange, modifier = Modifier.size(34.dp))
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))

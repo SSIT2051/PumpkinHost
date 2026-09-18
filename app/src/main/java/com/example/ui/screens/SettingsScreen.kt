@@ -32,6 +32,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MenuBook
+import com.example.ui.components.UserGuideDialog
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,6 +79,7 @@ fun SettingsScreen(
 
     var draftSettings by remember(settings) { mutableStateOf(settings) }
     val isDirty = draftSettings != settings
+    var showUserGuideDialog by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -312,6 +315,35 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
+                        Text("Detailed User Guide & Manual", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                        Text("In-depth walkthrough of all features, network options & console", fontSize = 12.sp, color = TextMuted)
+                    }
+
+                    Button(
+                        onClick = { showUserGuideDialog = true },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ObsidianSurfaceElevated,
+                            contentColor = TextPrimary
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.border(1.dp, ObsidianSurfaceBorder, RoundedCornerShape(8.dp))
+                    ) {
+                        Icon(Icons.Default.MenuBook, contentDescription = null, tint = PumpkinOrange, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Open", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                SettingsDivider()
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text("PumpkinMC Architecture Guide", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
                         Text("Revisit the features, efficiency, and PumpkinMC credit slides", fontSize = 12.sp, color = TextMuted)
                     }
@@ -473,6 +505,12 @@ fun SettingsScreen(
                     }
                 }
             }
+        }
+
+        if (showUserGuideDialog) {
+            UserGuideDialog(
+                onDismiss = { showUserGuideDialog = false }
+            )
         }
     }
 }
