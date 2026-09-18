@@ -117,7 +117,7 @@ Tap the orange **Start** button. Within 1 second, your server will boot to **20.
 
 ---
 
-## 📘 Detailed User Manual (Feature by Feature)
+## 📘 Detailed User Manual 
 
 ### 1. Dashboard & Live Metrics
 The Dashboard is the control hub of your active server:
