@@ -52,7 +52,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.CreateServerDialog
-import com.example.ui.components.OnboardingDialog
+import com.example.ui.components.LogoVariant
+import com.example.ui.components.PumpkinLogo
 import com.example.ui.components.ServerSwitcherSheet
 import com.example.ui.components.StatusBadge
 import com.example.ui.screens.ConsoleScreen
@@ -116,7 +117,6 @@ fun PumpkinMCApp(viewModel: PumpkinViewModel) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showServerSheet by remember { mutableStateOf(false) }
     var showCreateServerDialog by remember { mutableStateOf(false) }
-    var showManualOnboarding by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val navItems = listOf(
@@ -138,15 +138,11 @@ fun PumpkinMCApp(viewModel: PumpkinViewModel) {
                             .clickable { showServerSheet = true }
                             .padding(vertical = 4.dp, horizontal = 4.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(PumpkinOrange),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("🎃", fontSize = 14.sp)
-                        }
+                        PumpkinLogo(
+                            size = 28.dp,
+                            showGlow = false,
+                            variant = LogoVariant.COMPACT
+                        )
 
                         Spacer(modifier = Modifier.width(8.dp))
 
@@ -298,8 +294,7 @@ fun PumpkinMCApp(viewModel: PumpkinViewModel) {
                     hardwareInfo = hardwareInfo,
                     onUpdateSettings = { viewModel.updateSettings(it) },
                     onClearCacheAndLogs = { viewModel.clearAllTemporaryData() },
-                    onForceSyncMarket = { viewModel.refreshMarket() },
-                    onReplayOnboarding = { showManualOnboarding = true }
+                    onForceSyncMarket = { viewModel.refreshMarket() }
                 )
             }
         }
@@ -347,16 +342,6 @@ fun PumpkinMCApp(viewModel: PumpkinViewModel) {
                     motd = motd
                 )
                 showCreateServerDialog = false
-            }
-        )
-    }
-
-    // User Onboarding Slides ("Powered by PumpkinMC", Efficiency, Configurability, Multiplayer)
-    if (!appSettings.hasSeenOnboarding || showManualOnboarding) {
-        OnboardingDialog(
-            onDismiss = {
-                showManualOnboarding = false
-                viewModel.completeOnboarding()
             }
         )
     }

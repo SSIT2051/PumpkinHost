@@ -36,6 +36,8 @@ data class ServerConfig(
     val allowFlight: Boolean = false,
     val hardcore: Boolean = false,
     val lanModeEnabled: Boolean = true,
+    val bedrockCrossplayEnabled: Boolean = true,
+    val bedrockPort: Int = 19132,
     val playitEnabled: Boolean = true,
     val playitDomain: String = "pumpkin-srv-1.playit.gg:25565",
     val customTunnelEnabled: Boolean = false,

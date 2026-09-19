@@ -91,7 +91,7 @@ fun PluginMarketScreen(
     val context = LocalContext.current
     var activeTab by remember { mutableIntStateOf(0) }
     var showArchitectureNotice by remember { mutableStateOf(false) }
-    val categories = listOf("All", "Essentials", "Performance", "Security", "Gameplay", "Administration", "World Management", "Tools", "Economy")
+    val categories = listOf("All", "Early Access", "Essentials", "Performance", "Security", "Gameplay", "Administration", "World Management", "Tools", "Economy")
 
     val displayedPlugins = remember(plugins, activeTab) {
         if (activeTab == 0) plugins else plugins.filter { it.isInstalled }
@@ -372,12 +372,32 @@ private fun PluginItemCard(
                     Spacer(modifier = Modifier.width(10.dp))
 
                     Column {
-                        Text(
-                            text = plugin.name,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = plugin.name,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                            if (plugin.category == "Early Access") {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Color(0xFF332005))
+                                        .border(1.dp, Color(0xFFFFB300).copy(alpha = 0.6f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 5.dp, vertical = 1.dp)
+                                ) {
+                                    Text(
+                                        text = "EARLY ACCESS",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color(0xFFFFB300),
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                            }
+                        }
                         Text(
                             text = "v${plugin.version} by ${plugin.author}",
                             fontSize = 11.sp,

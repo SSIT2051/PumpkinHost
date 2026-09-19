@@ -9,6 +9,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,22 +31,31 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
@@ -53,7 +64,12 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -76,6 +92,8 @@ import com.example.domain.model.DeviceHardwareInfo
 import com.example.domain.model.LiveServerMetrics
 import com.example.domain.model.ServerConfig
 import com.example.domain.model.ServerStatus
+import com.example.ui.components.LogoVariant
+import com.example.ui.components.PumpkinLogo
 import com.example.ui.components.StatusBadge
 import com.example.ui.theme.ObsidianSurface
 import com.example.ui.theme.ObsidianSurfaceBorder
@@ -157,6 +175,8 @@ fun DashboardScreen(
 
     // Local buffered draft state for configuration
     var draftServer by remember(server.id) { mutableStateOf(server) }
+    var selectedNetworkRoute by remember { mutableStateOf(0) } // 0: Local Wi-Fi (LAN), 1: Custom Address, 2: Global (Playit)
+
     LaunchedEffect(server) {
         if (draftServer.id != server.id) {
             draftServer = server
@@ -175,7 +195,12 @@ fun DashboardScreen(
         draftServer.viewDistance != server.viewDistance ||
         draftServer.simulationDistance != server.simulationDistance ||
         draftServer.playitEnabled != server.playitEnabled ||
-        draftServer.lanModeEnabled != server.lanModeEnabled
+        draftServer.lanModeEnabled != server.lanModeEnabled ||
+        draftServer.bedrockCrossplayEnabled != server.bedrockCrossplayEnabled ||
+        draftServer.bedrockPort != server.bedrockPort ||
+        draftServer.customTunnelEnabled != server.customTunnelEnabled ||
+        draftServer.customTunnelType != server.customTunnelType ||
+        draftServer.customTunnelAddress != server.customTunnelAddress
 
     val coreOptions = listOf(1, 2, 4, 6, 8)
     val ramOptions = listOf(256, 512, 1024, 2048, 4096)
@@ -205,33 +230,7 @@ fun DashboardScreen(
                 .padding(bottom = if (isDirty) 76.dp else 0.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Top Action Row - Outside "New Server" button readily available
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text("SERVER INSTANCE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextMuted, letterSpacing = 0.5.sp)
-                Text(server.name, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-            }
-
-            Button(
-                onClick = onCreateNewServer,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = ObsidianSurfaceElevated,
-                    contentColor = TextPrimary
-                ),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.border(1.dp, PumpkinOrange.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null, tint = PumpkinOrange, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("New Server", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            }
-        }
-
-        // Main Server Card
+            // Main Server Card
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -246,36 +245,47 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = server.name,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        PumpkinLogo(
+                            size = 42.dp,
+                            showGlow = isRunning,
+                            variant = LogoVariant.BLADE_NODE
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(ObsidianSurfaceElevated)
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = server.name,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(ObsidianSurfaceElevated)
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "MC ${server.serverVersion.split(" ").first()}",
+                                        fontSize = 10.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PumpkinOrange
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "MC ${server.serverVersion.split(" ").first()}",
-                                    fontSize = 10.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Bold,
-                                    color = PumpkinOrange
+                                    text = "Port ${server.port}",
+                                    fontSize = 12.sp,
+                                    color = TextMuted,
+                                    fontFamily = FontFamily.Monospace
                                 )
                             }
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Port ${server.port}",
-                                fontSize = 12.sp,
-                                color = TextMuted,
-                                fontFamily = FontFamily.Monospace
-                            )
                         }
                     }
 
@@ -338,61 +348,257 @@ fun DashboardScreen(
             }
         }
 
-        // Connection Addresses
-        val activeAddress = if (server.playitEnabled && server.playitDomain.isNotEmpty()) {
-            server.playitDomain
-        } else {
-            "$localWifiIp:${server.port}"
+        // Connection Addresses & Platform Information
+        val activeHost = when (selectedNetworkRoute) {
+            0 -> localWifiIp.ifBlank { "192.168.1.150" }
+            1 -> draftServer.customTunnelAddress.ifBlank { "play.myserver.com" }
+            else -> server.playitDomain.substringBefore(":").ifBlank { "pumpkin-server.playit.gg" }
         }
 
-        Box(
+        // Dedicated High-Visibility Server Connection Card
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(14.dp))
                 .background(ObsidianSurface)
-                .border(1.dp, ObsidianSurfaceBorder, RoundedCornerShape(12.dp))
-                .clickable {
-                    clipboard.setText(AnnotatedString(activeAddress))
-                    Toast.makeText(context, "Copied: $activeAddress", Toast.LENGTH_SHORT).show()
-                }
-                .padding(16.dp)
+                .border(1.dp, ObsidianSurfaceBorder, RoundedCornerShape(14.dp))
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Header Row: Status & Route Type
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Wifi, contentDescription = null, tint = PumpkinOrange, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (server.playitEnabled) "GLOBAL SERVER ADDRESS" else "LOCAL LAN ADDRESS",
-                        fontSize = 10.sp,
+                        text = "SERVER ADDRESS & PORTS",
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextMuted,
                         letterSpacing = 0.5.sp
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = if (isRunning) activeAddress else "Server Offline",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        fontFamily = FontFamily.Monospace,
-                        color = if (isRunning) PumpkinOrange else TextMuted
-                    )
                 }
 
-                if (isRunning) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (isRunning) Color(0xFF00E676).copy(alpha = 0.15f) else ObsidianSurfaceElevated)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = if (isRunning) "● READY TO JOIN" else "○ OFFLINE",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isRunning) Color(0xFF00E676) else TextMuted
+                    )
+                }
+            }
+
+            // Route Selector Pills: Local Wi-Fi (Default) | Custom Address | Global (Playit)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                listOf("Local Wi-Fi", "Custom Address", "Global (Playit)").forEachIndexed { index, label ->
+                    val isSelected = selectedNetworkRoute == index
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(ObsidianSurfaceElevated)
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isSelected) PumpkinOrange else ObsidianSurfaceElevated)
+                            .border(1.dp, if (isSelected) PumpkinOrange else ObsidianSurfaceBorder, RoundedCornerShape(8.dp))
+                            .clickable { selectedNetworkRoute = index }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = TextPrimary, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Copy", fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text = label,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) Color.Black else TextSecondary
+                        )
+                    }
+                }
+            }
+
+            // If Custom is selected, show easy inline input for custom host/domain
+            if (selectedNetworkRoute == 1) {
+                OutlinedTextField(
+                    value = draftServer.customTunnelAddress,
+                    onValueChange = {
+                        draftServer = draftServer.copy(
+                            customTunnelEnabled = true,
+                            customTunnelAddress = it
+                        )
+                    },
+                    placeholder = { Text("e.g. mc.myserver.com or 0.tcp.ngrok.io", fontSize = 12.sp, color = TextMuted) },
+                    singleLine = true,
+                    label = { Text("Custom Domain / IP Address", fontSize = 11.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PumpkinOrange,
+                        unfocusedBorderColor = ObsidianSurfaceBorder,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedLabelColor = PumpkinOrange,
+                        unfocusedLabelColor = TextMuted
+                    )
+                )
+            }
+
+            // PRIMARY IP ADDRESS DISPLAY BOX (Big, bold, prominent, copyable)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(ObsidianSurfaceElevated)
+                    .border(1.dp, PumpkinOrange.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                    .padding(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = when (selectedNetworkRoute) {
+                                0 -> "WI-FI IP ADDRESS (ENTER IN MINECRAFT)"
+                                1 -> "CUSTOM ADDRESS"
+                                else -> "GLOBAL TUNNEL DOMAIN"
+                            },
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PumpkinOrange,
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = activeHost,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            color = TextPrimary
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            clipboard.setText(AnnotatedString(activeHost))
+                            Toast.makeText(context, "Copied IP Address: $activeHost", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.height(38.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PumpkinOrange, contentColor = Color.Black),
+                        contentPadding = PaddingValues(horizontal = 12.dp)
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Copy IP", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            // Ports Row: Bedrock (PE) & Java Edition Side-by-Side
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Bedrock Port Box
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(ObsidianSurfaceElevated)
+                        .border(1.dp, ObsidianSurfaceBorder, RoundedCornerShape(8.dp))
+                        .padding(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("BEDROCK PORT", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text("${server.bedrockPort}", fontSize = 15.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, color = TextPrimary)
+                            Text("UDP (Phone / Tablet)", fontSize = 9.sp, color = Color(0xFF00E676))
+                        }
+                        IconButton(
+                            onClick = {
+                                clipboard.setText(AnnotatedString(server.bedrockPort.toString()))
+                                Toast.makeText(context, "Copied Bedrock Port: ${server.bedrockPort}", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy Port", tint = TextMuted, modifier = Modifier.size(14.dp))
                         }
                     }
+                }
+
+                // Java Port Box
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(ObsidianSurfaceElevated)
+                        .border(1.dp, ObsidianSurfaceBorder, RoundedCornerShape(8.dp))
+                        .padding(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("JAVA PORT", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = TextMuted)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text("${server.port}", fontSize = 15.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, color = TextPrimary)
+                            Text("TCP (PC Edition)", fontSize = 9.sp, color = TextMuted)
+                        }
+                        IconButton(
+                            onClick = {
+                                clipboard.setText(AnnotatedString(server.port.toString()))
+                                Toast.makeText(context, "Copied Java Port: ${server.port}", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy Port", tint = TextMuted, modifier = Modifier.size(14.dp))
+                        }
+                    }
+                }
+            }
+
+            // Quick Step-by-Step Connection Instructions Banner
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFF141E16))
+                    .border(1.dp, Color(0xFF1B5E20), RoundedCornerShape(8.dp))
+                    .padding(10.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF00E676), modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "How to connect from Minecraft:",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF00E676)
+                        )
+                    }
+                    Text(
+                        text = "1. Connect other phones or PCs to the same Wi-Fi.\n2. In Minecraft: Play > Servers > Add Server.\n3. Server Address: $activeHost  |  Port: ${server.bedrockPort} (MCPE) or ${server.port} (PC).",
+                        fontSize = 10.sp,
+                        color = TextSecondary,
+                        lineHeight = 14.sp
+                    )
                 }
             }
         }
@@ -424,7 +630,7 @@ fun DashboardScreen(
             )
         }
 
-        // Hardware & Multithreading Tuning
+        // Hardware & Multithreading Tuning Header Card
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -461,18 +667,22 @@ fun DashboardScreen(
                                 draftServer = draftServer.copy(
                                     workerThreads = hardwareInfo.recommendedCores,
                                     rayonThreads = hardwareInfo.recommendedCores,
-                                    allocatedRamMb = hardwareInfo.recommendedRamMb
+                                    allocatedRamMb = hardwareInfo.recommendedRamMb,
+                                    maxStorageMb = hardwareInfo.recommendedStorageMb,
+                                    viewDistance = hardwareInfo.recommendedViewDistance,
+                                    simulationDistance = (hardwareInfo.recommendedViewDistance - 2).coerceAtLeast(4)
                                 )
-                                Toast.makeText(context, "Draft auto-tuned for ${hardwareInfo.deviceModel}! Press Save to apply.", Toast.LENGTH_SHORT).show()
+                                onApplyHardwareRecommendation()
+                                Toast.makeText(context, "⚡ Auto-tuned for ${hardwareInfo.deviceModel} (${hardwareInfo.recommendedCores} Cores)", Toast.LENGTH_SHORT).show()
                             }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Bolt, contentDescription = null, tint = PumpkinOrange, modifier = Modifier.size(12.dp))
+                            Icon(Icons.Default.Bolt, contentDescription = null, tint = PumpkinOrange, modifier = Modifier.size(13.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Auto-Tune (${hardwareInfo.recommendedCores}C / ${if (hardwareInfo.recommendedRamMb >= 1024) "${hardwareInfo.recommendedRamMb / 1024}GB" else "${hardwareInfo.recommendedRamMb}MB"})",
-                                fontSize = 10.sp,
+                                text = "Auto-Tune (${hardwareInfo.recommendedCores} Cores)",
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = PumpkinOrange
                             )
@@ -904,6 +1114,86 @@ fun DashboardScreen(
                         uncheckedTrackColor = ObsidianSurfaceElevated
                     )
                 )
+            }
+
+            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(ObsidianSurfaceBorder))
+
+            // Bedrock Crossplay Switch (Geyser Protocol Bridge)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Bedrock Edition Crossplay", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(Color(0xFF00E676).copy(alpha = 0.15f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text("UDP 19132", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF00E676))
+                        }
+                    }
+                    Text("Native RakNet protocol bridge enables mobile & console Minecraft players without plugins", fontSize = 12.sp, color = TextMuted)
+                }
+                Switch(
+                    checked = draftServer.bedrockCrossplayEnabled,
+                    onCheckedChange = { draftServer = draftServer.copy(bedrockCrossplayEnabled = it) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.Black,
+                        checkedTrackColor = PumpkinOrange,
+                        uncheckedThumbColor = TextMuted,
+                        uncheckedTrackColor = ObsidianSurfaceElevated
+                    )
+                )
+            }
+
+            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(ObsidianSurfaceBorder))
+
+            // Custom Tunnel / Proxy
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Custom Tunnel / Proxy", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                        Text("Use your own tunnel (Ngrok, Cloudflare, frp, reverse proxy)", fontSize = 12.sp, color = TextMuted)
+                    }
+                    Switch(
+                        checked = draftServer.customTunnelEnabled,
+                        onCheckedChange = { draftServer = draftServer.copy(customTunnelEnabled = it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.Black,
+                            checkedTrackColor = PumpkinOrange,
+                            uncheckedThumbColor = TextMuted,
+                            uncheckedTrackColor = ObsidianSurfaceElevated
+                        )
+                    )
+                }
+
+                if (draftServer.customTunnelEnabled) {
+                    OutlinedTextField(
+                        value = draftServer.customTunnelAddress,
+                        onValueChange = { draftServer = draftServer.copy(customTunnelAddress = it) },
+                        label = { Text("Public Tunnel Domain / IP", fontSize = 12.sp) },
+                        placeholder = { Text("e.g. play.mydomain.com or 0.tcp.ngrok.io:12345", fontSize = 12.sp) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PumpkinOrange,
+                            unfocusedBorderColor = ObsidianSurfaceBorder,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedLabelColor = PumpkinOrange,
+                            unfocusedLabelColor = TextMuted
+                        )
+                    )
+                }
             }
         }
     }

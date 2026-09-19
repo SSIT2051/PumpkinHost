@@ -8,6 +8,7 @@ import com.example.data.repository.PumpkinServerRepository
 import com.example.domain.model.DeviceHardwareInfo
 import com.example.domain.model.LiveServerMetrics
 import com.example.domain.model.LogEntry
+import com.example.domain.model.LogLevel
 import com.example.domain.model.MarketPlugin
 import com.example.domain.model.ServerConfig
 import com.example.domain.model.ServerFileItem
@@ -95,7 +96,8 @@ class PumpkinViewModel(application: Application) : AndroidViewModel(application)
     val editingFile = _editingFile.asStateFlow()
 
     // Local IP
-    val localWifiIp: String = repository.getLocalDeviceIp()
+    val localWifiIp: String
+        get() = repository.getLocalDeviceIp()
 
     // Device Hardware & Resource Tracking
     private val _deviceHardwareInfo = MutableStateFlow(DeviceHardwareDetector.detect(application))
@@ -113,9 +115,18 @@ class PumpkinViewModel(application: Application) : AndroidViewModel(application)
             rayonThreads = hw.recommendedCores,
             allocatedRamMb = hw.recommendedRamMb,
             maxStorageMb = hw.recommendedStorageMb,
-            viewDistance = hw.recommendedViewDistance
+            viewDistance = hw.recommendedViewDistance,
+            simulationDistance = (hw.recommendedViewDistance - 2).coerceAtLeast(4)
         )
         updateServerConfig(updated)
+        viewModelScope.launch {
+            repository.appendLog(
+                serverId = server.id,
+                level = LogLevel.INFO,
+                tag = "pumpkin::autotune",
+                message = "Hardware profile auto-applied: ${hw.socModel} (${hw.cpuCores} cores) -> ${hw.recommendedCores} Tokio workers, ${hw.recommendedRamMb}MB RAM, ${hw.recommendedViewDistance} chunks view distance."
+            )
+        }
     }
 
     // App & Server Settings (Battery optimization, crash recovery, crossplay)
@@ -228,7 +239,9 @@ class PumpkinViewModel(application: Application) : AndroidViewModel(application)
                 difficulty = difficulty,
                 onlineMode = onlineMode,
                 motd = motd,
-                playitDomain = "pumpkin-$port.playit.gg:$port",
+                bedrockPort = 19132,
+                bedrockCrossplayEnabled = true,
+                playitDomain = "pumpkin-$port.playit.gg",
                 status = ServerStatus.STOPPED,
                 createdAt = System.currentTimeMillis()
             )

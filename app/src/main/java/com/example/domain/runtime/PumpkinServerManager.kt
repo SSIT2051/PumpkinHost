@@ -23,6 +23,7 @@ class PumpkinServerManager(
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 ) {
     private val serverJobs = ConcurrentHashMap<String, Job>()
+    private val networkBridges = ConcurrentHashMap<String, MinecraftNetworkBridge>()
     private val _metricsMap = ConcurrentHashMap<String, MutableStateFlow<LiveServerMetrics>>()
 
     fun getMetrics(serverId: String): StateFlow<LiveServerMetrics> {
@@ -68,9 +69,27 @@ class PumpkinServerManager(
                     serverId = config.id,
                     level = LogLevel.INFO,
                     tag = "pumpkin::lan",
-                    message = "Local LAN broadcast beacon active on $ip:${config.port}"
+                    message = "Local LAN broadcast active on $ip (Java: ${config.port}, Bedrock: ${config.bedrockPort})"
                 )
             }
+
+            if (config.bedrockCrossplayEnabled) {
+                repository.appendLog(
+                    serverId = config.id,
+                    level = LogLevel.INFO,
+                    tag = "geyser::rs",
+                    message = "Bedrock Crossplay active: Built-in protocol translation on UDP port ${config.bedrockPort}."
+                )
+            }
+
+            // Start Real TCP & UDP Mobile Socket Listeners
+            val bridge = MinecraftNetworkBridge { level, tag, message ->
+                scope.launch {
+                    repository.appendLog(config.id, level, tag, message)
+                }
+            }
+            bridge.start(config, scope)
+            networkBridges[config.id] = bridge
 
             repository.appendLog(
                 serverId = config.id,
@@ -101,6 +120,7 @@ class PumpkinServerManager(
             delay(600)
 
             serverJobs.remove(serverId)?.cancel()
+            networkBridges.remove(serverId)?.stop()
 
             _metricsMap[serverId]?.update {
                 it.copy(
@@ -132,6 +152,7 @@ class PumpkinServerManager(
                 message = "Server restart initiated..."
             )
             serverJobs.remove(config.id)?.cancel()
+            networkBridges.remove(config.id)?.stop()
             delay(1000)
             startServer(config)
         }

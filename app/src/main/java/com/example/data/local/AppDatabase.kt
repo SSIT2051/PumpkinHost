@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
         CachedMarketPluginEntity::class,
         ServerLogEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -87,8 +87,10 @@ abstract class AppDatabase : RoomDatabase() {
                     allowFlight = false,
                     hardcore = false,
                     lanModeEnabled = true,
+                    bedrockCrossplayEnabled = true,
+                    bedrockPort = 19132,
                     playitEnabled = true,
-                    playitDomain = "pumpkin-play.playit.gg:25565",
+                    playitDomain = "pumpkin-play.playit.gg",
                     customTunnelEnabled = false,
                     customTunnelType = "Custom",
                     customTunnelAddress = "",

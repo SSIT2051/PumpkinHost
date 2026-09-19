@@ -33,6 +33,8 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MenuBook
+import com.example.ui.components.LogoVariant
+import com.example.ui.components.PumpkinLogo
 import com.example.ui.components.UserGuideDialog
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,7 +73,6 @@ fun SettingsScreen(
     onUpdateSettings: (AppSettings) -> Unit,
     onClearCacheAndLogs: () -> Unit,
     onForceSyncMarket: () -> Unit,
-    onReplayOnboarding: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -90,37 +91,6 @@ fun SettingsScreen(
                 .padding(bottom = if (isDirty) 80.dp else 0.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Platform Architecture & Footprint Banner
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(ObsidianSurface)
-                    .border(1.dp, ObsidianSurfaceBorder, RoundedCornerShape(12.dp))
-                    .padding(14.dp)
-            ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Bolt, contentDescription = null, tint = PumpkinOrange, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "RUST NATIVE ARM64 & LOW-END COMPATIBILITY",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextMuted,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Why budget phones run PumpkinMC: Traditional Java servers (Paper/Spigot) consume 1.5GB-2GB RAM just to initialize, causing immediate crashes on 2GB-4GB phones. PumpkinMC in Rust compiles to bare metal ARM64 with an ultra-low 18MB RAM footprint, running smoothly on quad-core chips without thermal throttling.",
-                        fontSize = 11.sp,
-                        color = TextSecondary,
-                        lineHeight = 16.sp
-                    )
-                }
-            }
-
             // Battery & Thermal Protection
             SettingsGroup(title = "BATTERY & THERMAL GUARD") {
                 SettingsRow(
@@ -333,35 +303,6 @@ fun SettingsScreen(
                         Text("Open", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
-
-                SettingsDivider()
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("PumpkinMC Architecture Guide", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
-                        Text("Revisit the features, efficiency, and PumpkinMC credit slides", fontSize = 12.sp, color = TextMuted)
-                    }
-
-                    Button(
-                        onClick = { onReplayOnboarding() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ObsidianSurfaceElevated,
-                            contentColor = TextPrimary
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.border(1.dp, ObsidianSurfaceBorder, RoundedCornerShape(8.dp))
-                    ) {
-                        Icon(Icons.Default.Info, contentDescription = null, tint = PumpkinOrange, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("View", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                }
             }
 
             // Live Device Hardware & Telemetry Group
@@ -433,6 +374,38 @@ fun SettingsScreen(
                             Text("Rec. View Distance: ${hardwareInfo.recommendedViewDistance} Chunks", fontSize = 12.sp, color = TextMuted)
                         }
                         Text(hardwareInfo.deviceTierName, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PumpkinOrange)
+                    }
+                }
+            }
+
+            // About & Identity Section with Distinctive Vector Logo
+            SettingsGroup(title = "ABOUT & CREDITS") {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    PumpkinLogo(
+                        size = 48.dp,
+                        showGlow = true,
+                        variant = LogoVariant.CREST
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("PumpkinMC Host", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(PumpkinOrange.copy(alpha = 0.2f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text("ALPHA", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = PumpkinOrange)
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text("Made with ❤️ by SSIT • Engine: PumpkinMC (Rust)", fontSize = 12.sp, color = TextMuted)
+                        Text("World's first native ARM64 Minecraft host for Android", fontSize = 11.sp, color = TextSecondary)
                     }
                 }
             }

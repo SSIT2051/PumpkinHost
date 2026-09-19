@@ -228,6 +228,7 @@ class PumpkinServerRepository(
     fun getLocalDeviceIp(): String {
         try {
             val interfaces = NetworkInterface.getNetworkInterfaces()
+            var candidateIp: String? = null
             while (interfaces.hasMoreElements()) {
                 val iface = interfaces.nextElement()
                 if (iface.isLoopback || !iface.isUp) continue
@@ -235,9 +236,19 @@ class PumpkinServerRepository(
                 while (addresses.hasMoreElements()) {
                     val addr = addresses.nextElement()
                     if (addr is Inet4Address && !addr.isLoopbackAddress) {
-                        return addr.hostAddress ?: "192.168.1.150"
+                        val host = addr.hostAddress ?: continue
+                        // Prioritize Wi-Fi interfaces
+                        if (iface.name.contains("wlan", ignoreCase = true) || iface.name.contains("ap", ignoreCase = true)) {
+                            return host
+                        }
+                        if (candidateIp == null) {
+                            candidateIp = host
+                        }
                     }
                 }
+            }
+            if (!candidateIp.isNullOrBlank()) {
+                return candidateIp
             }
         } catch (e: Exception) {
             // ignore

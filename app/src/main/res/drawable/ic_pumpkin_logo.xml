@@ -41,9 +41,12 @@
         android:pathData="M81,41 A2.4,2.4 0 1,1 81,45.8 A2.4,2.4 0 1,1 81,41 Z" />
 
     <!-- Sharp Angular Eyes -->
+    <!-- Left Eye -->
     <path
         android:fillColor="#000000"
         android:pathData="M36,42 L46,52 L36,52 Z" />
+
+    <!-- Right Eye -->
     <path
         android:fillColor="#000000"
         android:pathData="M72,42 L72,52 L62,52 Z" />
